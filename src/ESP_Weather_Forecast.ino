@@ -3,13 +3,13 @@
 #include <DHT.h>
 
 // ── Pin Definitions ─────────────────────────────────────────────────────────
-#define DHT_PIN          4      // GPIO4 → DHT11 data line
+#define DHT_PIN          4      // GPIO4 → DHT22 data line
 #define I2C_SDA_PIN      21     // ESP32 DevKit V1 default SDA
 #define I2C_SCL_PIN      22     // ESP32 DevKit V1 default SCL
 #define LDR_PIN          34     // ESP32 DevKit V1 ADC1_CH6
 
 // ── Sensor Config ───────────────────────────────────────────────────────────
-#define DHT_TYPE         DHT11
+#define DHT_TYPE         DHT22   
 #define BMP280_ADDR_PRI  0x76
 #define BMP280_ADDR_SEC  0x77
 #define SEA_LEVEL_HPA    1013.25f
@@ -21,7 +21,7 @@ static DHT             dht(DHT_PIN, DHT_TYPE);
 static Adafruit_BMP280 bmp;
 
 struct WeatherData {
-  float lightVoltage;  // V — raw ADC converted to volts
+  float lightVoltage;
   float tempDHT;
   float humidity;
   float heatIndex;
@@ -69,9 +69,6 @@ static WeatherData readSensors() {
   return d;
 }
 
-// ── Map voltage → human-readable condition ───────────────────────────────────
-// NOTE: thresholds are placeholders — replace with YOUR calibrated values
-// after logging dark / dim / daylight / bright-sun readings on your hardware.
 static const char* lightCondition(float v) {
   if (v < 0.5)      return "Night";
   else if (v < 1.5) return "Cloudy / Dim";
@@ -83,11 +80,11 @@ static void printWeather(const WeatherData& d) {
   Serial.println(F("\n╔══ Weather Station ══════════════════╗"));
 
   if (d.dhtValid) {
-    Serial.print(F("║ Temp  (DHT11)  : ")); Serial.print(d.tempDHT, 1);  Serial.println(F(" °C"));
+    Serial.print(F("║ Temp  (DHT22)  : ")); Serial.print(d.tempDHT, 1);  Serial.println(F(" °C"));
     Serial.print(F("║ Humidity       : ")); Serial.print(d.humidity, 1); Serial.println(F(" %"));
     Serial.print(F("║ Heat Index     : ")); Serial.print(d.heatIndex, 1); Serial.println(F(" °C"));
   } else {
-    Serial.println(F("║ [ERR] DHT11 read failed — check wiring"));
+    Serial.println(F("║ [ERR] DHT22 read failed — check wiring"));
   }
 
   Serial.println(F("║──────────────────────────────────────"));
@@ -115,7 +112,7 @@ static void printWeather(const WeatherData& d) {
 
 void setup() {
   Serial.begin(115200);
-  delay(1000); // give Serial Monitor time to attach after deep-sleep wake
+  delay(1000);
 
   Serial.println(F("\n[+] Weather Station starting..."));
 
@@ -139,7 +136,7 @@ void setup() {
   );
 
   Serial.println(F("[+] BMP280 OK"));
-  Serial.println(F("[+] DHT11 OK"));
+  Serial.println(F("[+] DHT22 OK"));
   Serial.println(F("[+] LDR OK"));
   Serial.println(F("[+] Ready\n"));
 }
@@ -148,6 +145,8 @@ void loop() {
   printWeather(readSensors());
 
   Serial.flush();
-  esp_sleep_enable_timer_wakeup(60ULL * 1000000ULL); // 1 minute
+  esp_sleep_enable_timer_wakeup(60ULL * 1000000ULL);
+  esp_deep_sleep_start();
+}
   esp_deep_sleep_start();
 }
